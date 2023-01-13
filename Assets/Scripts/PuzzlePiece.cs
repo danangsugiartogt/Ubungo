@@ -6,8 +6,11 @@ public class PuzzlePiece : MonoBehaviour
 {
     [SerializeField] private float offsetX = 0;
     [SerializeField] private float offsetY = 0;
+    [SerializeField] private bool isRotateAble;
 
     private Vector2 defaultPosition;
+
+    public bool IsRotateAble => isRotateAble;
 
     private void Awake()
     {
@@ -16,7 +19,7 @@ public class PuzzlePiece : MonoBehaviour
 
     private void OnMouseDown()
     {
-        
+        GameManagerEvent.NotifyOnSelectPuzzle(this);
     }
 
     private void OnMouseDrag()

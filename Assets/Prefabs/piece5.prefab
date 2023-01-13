@@ -218,6 +218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   offsetX: 0
   offsetY: 0
+  isRotateAble: 0
 --- !u!1 &6640304451179887126
 GameObject:
   m_ObjectHideFlags: 0
