@@ -31,7 +31,6 @@ public class Grid : MonoBehaviour
                 grids[i, j] = new Vector2(postX, postY);
 
                 var tile = Instantiate(tilePrefab, new Vector3(postX, postY, 0), Quaternion.identity, transform);
-                Debug.LogWarning(grids[i, j]);
             }
         }
 
