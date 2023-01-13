@@ -30,6 +30,20 @@ public class PuzzlePiece : MonoBehaviour
         transform.position = defaultPosition;
     }
 
+    public GameObject[] GetChilds()
+    {
+        GameObject[] childs = new GameObject[transform.childCount];
+        int index = 0;
+
+        foreach (Transform tf in transform)
+        {
+            childs[index] = tf.gameObject;
+            index++;
+        }
+
+        return childs;
+    }
+
     private void OnMouseUp()
     {
         var mousePosition = GetMousePosition();

@@ -6,8 +6,10 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private Level level;
+    [SerializeField] private List<PuzzlePiece> puzzlePieceList;
 
     private Dictionary<PuzzlePiece, Vector2[]> puzzlePieceOnSlotDict = new Dictionary<PuzzlePiece, Vector2[]>();
+    private Dictionary<GameObject, Vector2> puzzlePiecesPositionDict = new Dictionary<GameObject, Vector2>();
 
     private void OnEnable()
     {
@@ -19,28 +21,101 @@ public class GameManager : MonoBehaviour
         GameManagerEvent.OnDropAnswer -= OnDropAnswer;
     }
 
+    private void Awake()
+    {
+        InitializePuzzlePieces();
+    }
+
+    private void InitializePuzzlePieces()
+    {
+        for(int i = 0; i < puzzlePieceList.Count; i++)
+        {
+            var childs = puzzlePieceList[i].GetChilds();
+            for(int j = 0; j < childs.Length; j++)
+            {
+                puzzlePiecesPositionDict.Add(childs[j], childs[j].transform.position);
+            }
+        }
+    }
+
+    public void CheckForCompletion()
+    {
+        Debug.LogError(IsCompleted());
+    }
+
     private void OnDropAnswer(PuzzlePiece puzzle, Vector2[] positions)
     {
         // Remove puzzle from dictionary
-        if (puzzlePieceOnSlotDict.TryGetValue(puzzle, out var childsPosition))
-        {
-            level.RemoveClaimedTiles(childsPosition);
-            puzzlePieceOnSlotDict.Remove(puzzle);
-        }
+        ResetPuzzlePiecesPositionDict(puzzle);
 
-        // Check answer
-        var isCorrectAnswer = level.TryToClaimTiles(positions);
-
-        if (isCorrectAnswer)
+        // Check collision with other puzzle
+        var isValidDrop = IsValidDrop(positions);
+        if (isValidDrop)
         {
-            puzzlePieceOnSlotDict.Add(puzzle, positions);
-            GameManagerEvent.NotifyOnCorrectAnswer();
+            Debug.Log("Valid Drop");
         }
         else
         {
             puzzle.SetPuzzleToDefaultPosition();
             GameManagerEvent.NotifyOnWrongAnswer();
         }
+
+        UpdatePuzzlePiecesPositionDict(puzzle);
+    }
+
+    private void UpdatePuzzlePiecesPositionDict(PuzzlePiece puzzle)
+    {
+        var puzzleChilds = puzzle.GetChilds();
+        for (int i = 0; i < puzzleChilds.Length; i++)
+        {
+            var puzzleChild = puzzleChilds[i];
+            if (puzzlePiecesPositionDict.TryGetValue(puzzleChild, out var puzzlePost))
+            {
+                puzzlePiecesPositionDict[puzzleChild] = puzzleChild.transform.position;
+            }
+        }
+    }
+
+    private void ResetPuzzlePiecesPositionDict(PuzzlePiece puzzle)
+    {
+        var puzzleChilds = puzzle.GetChilds();
+        for (int i = 0; i < puzzleChilds.Length; i++)
+        {
+            var puzzleChild = puzzleChilds[i];
+            if (puzzlePiecesPositionDict.TryGetValue(puzzleChild, out var puzzlePost))
+            {
+                puzzlePiecesPositionDict[puzzleChild] = new Vector2(1000, 1000);
+            }
+        }
+    }
+
+    private bool IsValidDrop(Vector2[] positions)
+    {
+        for(int i = 0; i < positions.Length; i++)
+        {
+            if (puzzlePiecesPositionDict.ContainsValue(positions[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool IsCompleted()
+    {
+        for(int i = 0; i < puzzlePieceList.Count; i++)
+        {
+            var childs = puzzlePieceList[i].GetChilds();
+            Vector2[] positions = new Vector2[childs.Length];
+            for (int j = 0; j < childs.Length; j++)
+            {
+                positions[j] = childs[i].transform.position;
+            }
+
+            if (level.IsTilesOverlapping(positions) == false)
+                return false;
+        }
+
+        return true;
     }
 }
 

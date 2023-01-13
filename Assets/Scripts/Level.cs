@@ -32,25 +32,17 @@ public class Level : MonoBehaviour
         }
     }
 
-    public bool TryToClaimTiles(Vector2[] positions)
+    public bool IsTilesOverlapping(Vector2[] positions)
     {
-        List<Tile> validTiles = new List<Tile>();
         for(int i = 0; i < positions.Length; i++)
         {
             var position = positions[i];
 
-            var validTile = tileList.Find(tile => tile.position == position && tile.isClaimed == false);
+            var validTile = tileList.Find(tile => tile.position == position);
             if (validTile == null)
             {
                 return false;
             }
-
-            validTiles.Add(validTile);
-        }
-
-        foreach(var tile in validTiles)
-        {
-            tile.isClaimed = true;
         }
 
         return true;
