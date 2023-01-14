@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -72,7 +73,69 @@ public class GameManager : MonoBehaviour
         var rotateAmount = currentRotation.eulerAngles.z - 90;
 
         selectedPuzzle.transform.rotation = Quaternion.Euler(0, 0, rotateAmount);
-        UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+        ResetPuzzlePiecesPositionDict(selectedPuzzle);
+
+        var isValidMove = IsValidPositions(selectedPuzzle.GetChildsPosition());
+        if (isValidMove)
+        {
+            UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+            return;
+        }
+
+        TryMoveToValidPosition();
+    }
+
+    private void TryMoveToValidPosition()
+    {
+        bool isValidMove = false;
+        for (int i = 1; i < 100; i++)
+        {
+            // try move -x
+            isValidMove = _IsValidMove(new Vector2(selectedPuzzle.transform.position.x - i, selectedPuzzle.transform.position.y));
+            if (isValidMove)
+            {
+                UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+                break;
+            }
+
+            // try move +x
+            isValidMove = _IsValidMove(new Vector2(selectedPuzzle.transform.position.x + i, selectedPuzzle.transform.position.y));
+            if (isValidMove)
+            {
+                UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+                break;
+            }
+
+            // try move -y
+            isValidMove = _IsValidMove(new Vector2(selectedPuzzle.transform.position.x, selectedPuzzle.transform.position.y - i));
+            if (isValidMove)
+            {
+                UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+                break;
+            }
+
+            // try move +y
+            isValidMove = _IsValidMove(new Vector2(selectedPuzzle.transform.position.x, selectedPuzzle.transform.position.y + i));
+            if (isValidMove)
+            {
+                UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+                break;
+            }
+        }
+
+        bool _IsValidMove(Vector2 post)
+        {
+            ResetPuzzlePiecesPositionDict(selectedPuzzle);
+            selectedPuzzle.transform.position = post;
+            isValidMove = IsValidPositions(selectedPuzzle.GetChildsPosition());
+            if (isValidMove)
+            {
+                UpdatePuzzlePiecesPositionDict(selectedPuzzle);
+                return true;
+            }
+
+            return false;
+        }
     }
 
     private void OnSelectPuzzle(PuzzlePiece puzzle)
@@ -93,12 +156,8 @@ public class GameManager : MonoBehaviour
         ResetPuzzlePiecesPositionDict(puzzle);
 
         // Check collision with other puzzle
-        var isValidDrop = IsValidDrop(positions);
-        if (isValidDrop)
-        {
-            Debug.Log("Valid Drop");
-        }
-        else
+        var isValidDrop = IsValidPositions(positions);
+        if (!isValidDrop)
         {
             puzzle.SetPuzzleToDefaultPosition();
         }
@@ -132,12 +191,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private bool IsValidDrop(Vector2[] positions)
+    private bool IsValidPositions(Vector2[] positions)
     {
         for(int i = 0; i < positions.Length; i++)
         {
-            if (puzzlePiecesPositionDict.ContainsValue(positions[i]))
+            var piece = puzzlePiecesPositionDict.FirstOrDefault(piece => piece.Value == positions[i]).Key;
+            if(piece != null)
+            {
                 return false;
+            }
         }
 
         return true;

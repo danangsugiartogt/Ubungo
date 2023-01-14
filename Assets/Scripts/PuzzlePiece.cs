@@ -80,7 +80,7 @@ public class PuzzlePiece : MonoBehaviour
         return Mathf.RoundToInt(value);
     }
 
-    private Vector2[] GetChildsPosition()
+    public Vector2[] GetChildsPosition()
     {
         Vector2[] childsPost = new Vector2[transform.childCount];
         int index = 0;
