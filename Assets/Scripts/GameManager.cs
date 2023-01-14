@@ -181,8 +181,10 @@ public class GameManager : MonoBehaviour
         var isValidDrop = IsValidPositions(positions);
         if (!isValidDrop)
         {
+            EnableUIButton(isEnabled: false);
             puzzle.MovePuzzleToLatestPosition(.2f, onComplete: () =>
             {
+                EnableUIButton(isEnabled: true);
                 puzzle.SetPuzzleLayer(OnDropLayer);
                 puzzle.UpdateLatestPosition(puzzle.transform.position);
                 UpdatePuzzlePiecesPositionDict(puzzle);
@@ -267,6 +269,7 @@ public class GameManager : MonoBehaviour
                         ResetPuzzlePiecesPositionDict(puzzle);
                         puzzle.MovePuzzleToDefaultPosition(moveDuration, onComplete: () => 
                         {
+
                             puzzle.UpdateLatestPosition(puzzle.transform.position);
                             UpdatePuzzlePiecesPositionDict(puzzle);
                         });
