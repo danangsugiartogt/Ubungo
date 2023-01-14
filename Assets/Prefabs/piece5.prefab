@@ -219,6 +219,7 @@ MonoBehaviour:
   offsetX: 0
   offsetY: 0
   isRotateAble: 0
+  particle: {fileID: 2221177265616213738, guid: 556afe89e74610a41915bad0d5a04487, type: 3}
 --- !u!1 &6640304451179887126
 GameObject:
   m_ObjectHideFlags: 0

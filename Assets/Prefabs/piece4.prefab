@@ -193,6 +193,7 @@ MonoBehaviour:
   offsetX: 0.5
   offsetY: 0.5
   isRotateAble: 1
+  particle: {fileID: 2221177265616213738, guid: 12176c86de8a280409953fbe4de98844, type: 3}
 --- !u!61 &7194351588370355795
 BoxCollider2D:
   m_ObjectHideFlags: 0

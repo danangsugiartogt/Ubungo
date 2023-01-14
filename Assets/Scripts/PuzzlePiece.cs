@@ -1,20 +1,29 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
+using System;
 
 public class PuzzlePiece : MonoBehaviour
 {
     [SerializeField] private float offsetX = 0;
     [SerializeField] private float offsetY = 0;
     [SerializeField] private bool isRotateAble;
+    [SerializeField] private ParticleSystem particle;
 
     private Vector2 defaultPosition;
+    private Vector2 latestPosition;
+    private BoxCollider2D boxCollider;
+    private SpriteRenderer spriteRender;
 
     public bool IsRotateAble => isRotateAble;
 
     private void Awake()
     {
         defaultPosition = transform.position;
+        latestPosition = defaultPosition;
+        boxCollider = GetComponent<BoxCollider2D>();
+        spriteRender = GetComponent<SpriteRenderer>();
     }
 
     private void OnMouseDown()
@@ -28,9 +37,48 @@ public class PuzzlePiece : MonoBehaviour
         transform.position = mousePosition;
     }
 
-    public void SetPuzzleToDefaultPosition()
+    public void UpdateLatestPosition(Vector2 position)
     {
-        transform.position = defaultPosition;
+        latestPosition = position;
+    }
+
+    public void MovePuzzleToDefaultPosition(float duration, Action onComplete = null)
+    {
+        transform.DOMove(defaultPosition, duration).OnComplete(() => {
+            onComplete?.Invoke();
+        });
+    }
+
+    public void MovePuzzleToLatestPosition(float duration, Action onComplete = null)
+    {
+        EnableInteraction(false);
+        transform.DOMove(latestPosition, duration).OnComplete(() => {
+            EnableInteraction(true);
+            onComplete?.Invoke();
+        });
+    }
+
+    public void SetPuzzleLayer(string layerName)
+    {
+        spriteRender.sortingLayerName = layerName;
+    }
+
+    public void SetPuzzleColor(Color color)
+    {
+        spriteRender.color = color;
+    }
+
+    public void EnableInteraction(bool isEnabled = true)
+    {
+        boxCollider.enabled = isEnabled;
+    }
+
+    public void PlayParticle()
+    {
+        var spawnnedParticle = Instantiate(particle, transform);
+        var duration = spawnnedParticle.main.duration + spawnnedParticle.main.startLifetimeMultiplier;
+        spawnnedParticle.Play();
+        Destroy(spawnnedParticle.gameObject, duration);
     }
 
     public GameObject[] GetChilds()

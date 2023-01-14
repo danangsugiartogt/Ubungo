@@ -4,11 +4,20 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using DG.Tweening;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
+    private readonly string OnDragLayer = "OnDrag";
+    private readonly string OnDropLayer = "Default";
+
     [SerializeField] private Level level;
     [SerializeField] private List<PuzzlePiece> puzzlePieceList;
+
+    [SerializeField] private Button buttonUbungo;
+    [SerializeField] private Button buttonRotate;
+    [SerializeField] private Button buttonExit;
 
     private Dictionary<GameObject, Vector2> puzzlePiecesPositionDict = new Dictionary<GameObject, Vector2>();
 
@@ -45,19 +54,25 @@ public class GameManager : MonoBehaviour
 
     public void CheckForCompletion()
     {
-        Debug.LogError(IsCompleted());
-        if (IsCompleted())
-        {
-            var levelName = SceneManager.GetActiveScene().name;
-            if (levelName == "Level1")
-                SceneManager.LoadScene("Level2");
-            else
-                SceneManager.LoadScene("MainMenu");
-        }
-        else
-        {
+        StartCoroutine(CheckCompletionWithEffect(
+            onStart: ()=> {
+                EnableUIButton(isEnabled: false);
+                EnablePuzzlesInteraction(isEnabled: false);
+            },
+            onComplete: (isWin) =>
+            {
+                EnableUIButton(isEnabled: true);
+                EnablePuzzlesInteraction(isEnabled: true);
 
-        }
+                if (isWin == false) return;
+
+                var levelName = SceneManager.GetActiveScene().name;
+                if (levelName == "Level1")
+                    SceneManager.LoadScene("Level2");
+                else
+                    SceneManager.LoadScene("MainMenu");
+            }
+        ));
     }
 
     public void ExitGame()
@@ -67,7 +82,7 @@ public class GameManager : MonoBehaviour
 
     public void Rotate()
     {
-        if (!selectedPuzzle.IsRotateAble) return;
+        if (selectedPuzzle == null || !selectedPuzzle.IsRotateAble) return;
 
         var currentRotation = selectedPuzzle.transform.rotation;
         var rotateAmount = currentRotation.eulerAngles.z - 90;
@@ -141,12 +156,19 @@ public class GameManager : MonoBehaviour
     private void OnSelectPuzzle(PuzzlePiece puzzle)
     {
         selectedPuzzle = puzzle;
+
         foreach(var puz in puzzlePieceList)
         {
             if(puz == puzzle)
-                puzzle.GetComponent<SpriteRenderer>().color = new Color(.7f, .7f, .7f);
+            {
+                puzzle.SetPuzzleLayer(OnDragLayer);
+                puzzle.SetPuzzleColor(new Color(.7f, .7f, .7f));
+            }
             else
-                puz.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1);
+            {
+                puz.SetPuzzleLayer(OnDropLayer);
+                puz.SetPuzzleColor(new Color(1, 1, 1));
+            }
         }
     }
 
@@ -159,10 +181,19 @@ public class GameManager : MonoBehaviour
         var isValidDrop = IsValidPositions(positions);
         if (!isValidDrop)
         {
-            puzzle.SetPuzzleToDefaultPosition();
+            puzzle.MovePuzzleToLatestPosition(.2f, onComplete: () =>
+            {
+                puzzle.SetPuzzleLayer(OnDropLayer);
+                puzzle.UpdateLatestPosition(puzzle.transform.position);
+                UpdatePuzzlePiecesPositionDict(puzzle);
+            });
         }
-
-        UpdatePuzzlePiecesPositionDict(puzzle);
+        else
+        {
+            puzzle.SetPuzzleLayer(OnDropLayer);
+            puzzle.UpdateLatestPosition(puzzle.transform.position);
+            UpdatePuzzlePiecesPositionDict(puzzle);
+        }
     }
 
     private void UpdatePuzzlePiecesPositionDict(PuzzlePiece puzzle)
@@ -205,22 +236,70 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
-    private bool IsCompleted()
+    private IEnumerator CheckCompletionWithEffect(Action onStart, Action<bool> onComplete)
     {
+        onStart?.Invoke();
+
+        bool isWin = true;
         for(int i = 0; i < puzzlePieceList.Count; i++)
         {
-            var childs = puzzlePieceList[i].GetChilds();
+            var puzzle = puzzlePieceList[i];
+            var childs = puzzle.GetChilds();
             Vector2[] positions = new Vector2[childs.Length];
             for (int j = 0; j < childs.Length; j++)
             {
                 positions[j] = childs[j].transform.position;
             }
 
+            // not correct
+            float timeToWait = 0;
             if (level.IsTilesOverlapping(positions) == false)
-                return false;
+            {
+                isWin = false;
+
+                float shakeDuration = .5f;
+                int loops = 3;
+                float moveDuration = .2f;
+                puzzle.transform.DOShakeRotation(shakeDuration, strength: 20, vibrato: 1, randomness: 180, randomnessMode: ShakeRandomnessMode.Harmonic)
+                    .SetLoops(loops, LoopType.Yoyo)
+                    .OnComplete(() => {
+                        puzzle.transform.rotation = Quaternion.Euler(0, 0, 0);
+                        ResetPuzzlePiecesPositionDict(puzzle);
+                        puzzle.MovePuzzleToDefaultPosition(moveDuration, onComplete: () => 
+                        {
+                            puzzle.UpdateLatestPosition(puzzle.transform.position);
+                            UpdatePuzzlePiecesPositionDict(puzzle);
+                        });
+                    });
+
+                timeToWait = shakeDuration * loops + moveDuration + .1f;
+            }
+            else
+            {
+                puzzle.transform.DOPunchScale(new Vector3(.2f, .2f, .2f), 0.2f);
+                puzzle.PlayParticle();
+                timeToWait = .4f;
+            }
+
+            yield return new WaitForSeconds(timeToWait);
         }
 
-        return true;
+        onComplete?.Invoke(isWin);
+    }
+
+    private void EnableUIButton(bool isEnabled = true)
+    {
+        buttonUbungo.interactable = isEnabled;
+        buttonRotate.interactable = isEnabled;
+        buttonExit.interactable = isEnabled;
+    }
+
+    private void EnablePuzzlesInteraction(bool isEnabled = true)
+    {
+        foreach(var puzzle in puzzlePieceList)
+        {
+            puzzle.EnableInteraction(isEnabled);
+        }
     }
 }
 

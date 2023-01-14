@@ -249,3 +249,4 @@ MonoBehaviour:
   offsetX: 0.5
   offsetY: 0.5
   isRotateAble: 1
+  particle: {fileID: 2221177265616213738, guid: 891076c4b3c738b4e816f2c82ec93615, type: 3}
