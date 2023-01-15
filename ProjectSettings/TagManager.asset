@@ -44,3 +44,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: OnDrag
+    uniqueID: 2303026445
+    locked: 0
+  - name: Particle
+    uniqueID: 584171669
+    locked: 0
